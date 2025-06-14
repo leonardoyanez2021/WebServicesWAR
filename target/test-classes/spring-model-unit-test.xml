@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- IMPORTANTE: Beans para test definidos con default-lazy-init="true" para cargar bajo demanda -->
+<beans:beans
+	xmlns:beans="http://www.springframework.org/schema/beans" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+    http://www.springframework.org/schema/beans/spring-beans-4.0.xsd	
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-4.0.xsd"    
+    default-lazy-init="true">
+    
+    <context:property-placeholder location="classpath:es/altia/bne/cron/config/jobs.properties"/>	
+	
+    <!-- Test dataSource     
+    <beans:bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <beans:property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+        <beans:property name="url" value="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne;" />
+        <beans:property name="username" value="bne" />
+        <beans:property name="password" value="bne" />
+    </beans:bean>
+    -->
+    <!-- ### 2. DATASOURCE ### -->
+      
+   <beans:bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <beans:property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+<!--         <beans:property name="url" value="jdbc:sqlserver://176.58.9.97:1433;databaseName=bne;" /> -->
+<!--         <beans:property name="username" value="bne" /> -->
+<!--         <beans:property name="password" value="AI&amp;Mfx/Sq-\U" /> -->
+        
+        <beans:property name="url" value="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne;" />
+        <beans:property name="username" value="bne" />
+        <beans:property name="password" value="bne" />
+    </beans:bean>
+    
+    <beans:bean id="readOnlyDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+    <beans:property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+    <beans:property name="url" value="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne;" />
+    <beans:property name="username" value="bne" />
+    <beans:property name="password" value="bne" />
+    </beans:bean>
+    <beans:bean id="documentosDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+      <beans:property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+      <beans:property name="url" value="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne;" />
+      <beans:property name="username" value="bne" />
+      <beans:property name="password" value="bne" />
+    </beans:bean>
+    
+    
+	<beans:import resource="classpath:es/altia/bne/config/hibernate/HibernateSessionFactory.xml"/>	
+	<beans:import resource="classpath:es/altia/bne/config/dozer/spring-dozer.xml"/>
+    <beans:import resource="classpath:es/altia/bne/config/dozer/spring-dozer-service.xml"/>    
+
+	
+	
+	<context:annotation-config />
+	
+	<context:component-scan base-package="es.altia.bne.model"/>
+    <context:component-scan base-package="es.altia.bne.service.impl"/>	
+    <context:component-scan base-package="es.altia.bne.cron"/>	
+    
+</beans:beans>

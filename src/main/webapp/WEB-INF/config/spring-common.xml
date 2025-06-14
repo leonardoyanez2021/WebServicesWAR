@@ -1,0 +1,518 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security" xmlns:beans="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+  xmlns:context="http://www.springframework.org/schema/context" xmlns:mvc="http://www.springframework.org/schema/mvc"
+  xmlns:jee="http://www.springframework.org/schema/jee"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+	http://www.springframework.org/schema/security
+	http://www.springframework.org/schema/security/spring-security-5.4.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-4.0.xsd
+    http://www.springframework.org/schema/mvc
+    http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+    http://www.springframework.org/schema/util 
+    http://www.springframework.org/schema/util/spring-util-4.0.xsd 
+    http://www.springframework.org/schema/jee 
+    http://www.springframework.org/schema/jee/spring-jee.xsd">
+
+  <!-- Orden de carga de ficheros de propiedades de MAYOR a MENOR PRECEDENCIA. Propiedades definidas en ficheros de mayor precedencia sobreescriben 
+    a propiedades de los de menor. 1. overrinding-application.properties (fichero externo para passwords que sobreescribe propiedades vacias de otros 
+    ficheros) 2. scheduler.properties (fichero externo para passwords) 3. jobs.properties (fichero de propiedades utilizadas por los jobs) 4. application.properties 
+    (fichero del módulo BolsaEmpleoComun) NOTAS: La propiedad order indica el orden de precedencia entre tags context:property-placeholder. En la 
+    lista location del tag context:property-placeholder el fichero que más prioridad será el último. -->
+  <context:property-placeholder location="classpath:overriding-application.properties"
+    ignore-resource-not-found="true" ignore-unresolvable="true" order="1" />
+
+  <context:property-placeholder
+    location="classpath:application.properties,
+                  classpath:es/altia/bne/cron/config/jobs.properties,
+    			  classpath:es/altia/bne/cron/config/scheduler.properties"
+    order="2" />
+
+  <beans:import resource="classpath:es/altia/bne/config/hibernate/DataSource.xml" />
+  <beans:import resource="classpath:es/altia/bne/config/hibernate/HibernateSessionFactory.xml" />
+  <beans:import resource="classpath:es/altia/bne/config/dozer/spring-dozer.xml" />
+  <beans:import resource="classpath:es/altia/bne/config/dozer/spring-dozer-service.xml" />
+
+  <context:annotation-config />
+
+  <!-- Bean con info del nombre del datasource -->
+  <jee:jndi-lookup id="datasourceJNDIName" jndi-name="datasourceJNDIName" resource-ref="true" />
+
+  <!-- Bean con info del nombre del datasource -->
+  <jee:jndi-lookup id="documentosDatasourceJNDIName" jndi-name="documentosDatasourceJNDIName" resource-ref="true" />
+
+  <!-- Componentes del resto de módulos -->
+  <context:component-scan base-package="es.altia.bne.model" />
+  <context:component-scan base-package="es.altia.bne.service" />
+  <context:component-scan base-package="es.altia.bne.comun" />
+  <context:component-scan base-package="es.altia.bne.helper" />
+  <context:component-scan base-package="es.altia.bne.internalapi" />
+
+  <!-- Componentes propios de este módulo -->
+  <context:component-scan base-package="es.altia.bne.cron" />
+
+  <!-- Dependencias con el resto de módulos de la aplicación -->
+  <!-- Algoritmos de hash para las claves de usuario -->
+  <beans:bean name="bcryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder">
+    <beans:constructor-arg value="12" />
+  </beans:bean>
+
+  <!-- Referencia al pool creado en el context.xml para QUARTZ -->
+  <beans:bean id="dataSourceBneQuartz" class="org.springframework.jndi.JndiObjectFactoryBean">
+    <beans:property name="jndiName" value="java:comp/env/jdbc/bneQuartzDS" />
+  </beans:bean>
+
+  <beans:bean id="readOnlyDataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
+    <beans:property name="jndiName" value="java:comp/env/jdbc//webservicesDSReadOnly" />
+  </beans:bean>
+
+  <beans:bean id="transactionManagerBneQuartz" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    <beans:property name="dataSource" ref="dataSourceBneQuartz" />
+  </beans:bean>
+
+  <!-- Job listeners -->
+  <beans:bean id="quartzJobListener" class="es.altia.bne.cron.jobs.util.AuditoriaQuartzJobListener">
+  </beans:bean>
+
+  <!-- Actualización del estado de los SMS enviados a la pasarela -->
+  <beans:bean id="actualizaEstadoSmsJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ActualizaEstadoSmsDesdePasarelaJob" />
+  </beans:bean>
+
+  <!-- Reseteo de la secuencia de transacciones para las consultas al registro civil -->
+  <beans:bean id="reseteaSecuenciaTransaccionRegistroCivilJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ReseteaSecuenciaTransaccionRegistroCivilJob" />
+  </beans:bean>
+
+  <!-- Reseteo de la secuencia ordinal de ofertas -->
+  <beans:bean id="reseteaSecuenciaOfertasJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ReseteaSecuenciaOfertasJob" />
+  </beans:bean>
+
+  <!-- Job diario para información de accions de intermediación -->
+  <beans:bean id="envioInformacionAccionesSenceJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.EnvioInformacionAccionesSenceJob" />
+  </beans:bean>
+
+  <beans:bean id="testJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.TestJob" />
+    <beans:property name="jobDataAsMap">
+      <beans:map>
+        <beans:entry key="someParam1" value="${bne.cron.testJob.someParam1}" />
+        <beans:entry key="someParam2" value="${bne.cron.testJob.someParam2}" />
+      </beans:map>
+    </beans:property>
+  </beans:bean>
+
+  <!-- Singleton objectMapper -->
+  <beans:bean name="objectMapper" class="com.fasterxml.jackson.databind.ObjectMapper" />
+
+  <beans:bean id="procesarCertificacionesJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ProcesaCertificacionesJob" />
+    <beans:property name="jobDataAsMap">
+      <beans:map>
+        <beans:entry key="periodoCertificacion"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaVeintidos.periodoCertificacion}" />
+        <beans:entry key="diaInicioPeriodoValidacion"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaVeintidos.diaInicioEmisionGiros}" />
+        <beans:entry key="diaFinPeriodoValidacion"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaVeintidos.diaFinEmisionGiros}" />
+        <beans:entry key="mesInicioPeriodoValidacion"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaVeintidos.mesInicioEmisionGiros}" />
+        <beans:entry key="mesFinPeriodoValidacion"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaVeintidos.mesFinEmisionGiros}" />
+        <beans:entry key="diaInicioPeriodoValidacionPrimerGiro"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaVeintidos.diaInicioEmisionPrimerosGiros}" />
+        <beans:entry key="diaFinPeriodoValidacionPrimerGiro"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaVeintidos.diaFinEmisionPrimerosGiros}" />
+        <beans:entry key="mesInicioPeriodoValidacionPrimerGiro"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaVeintidos.mesInicioEmisionPrimerosGiros}" />
+        <beans:entry key="mesFinPeriodoValidacionPrimerGiro"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaVeintidos.mesFinEmisionPrimerosGiros}" />
+        <beans:entry key="smtpHost" value="${bne.mail.smtp.host}" />
+        <beans:entry key="smtpPort" value="${bne.mail.smtp.port}" />
+        <beans:entry key="smtpUser" value="${bne.mail.smtp.user}" />
+        <beans:entry key="smtpPassword" value="${bne.mail.smtp.password}" />
+        <beans:entry key="smtpAuthType" value="${bne.mail.smtp.authtype}" />
+        <beans:entry key="smtpNtlmdomain" value="${bne.mail.smtp.ntlmdomain}" />
+        <beans:entry key="mailFrom" value="${bne.jobs.procesarCertificacionesJob.mail_from}" />
+        <beans:entry key="mailTo" value="${bne.jobs.procesarCertificacionesJob.mail_to}" />
+
+      </beans:map>
+    </beans:property>
+  </beans:bean>
+
+  <beans:bean id="procesarCertificacionesDiaCincoJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ProcesaCertificacionesJob" />
+    <beans:property name="jobDataAsMap">
+      <beans:map>
+        <beans:entry key="periodoCertificacion"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaCinco.periodoCertificacion}" />
+        <beans:entry key="diaInicioPeriodoValidacion"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaCinco.diaInicioEmisionGiros}" />
+        <beans:entry key="diaFinPeriodoValidacion"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaCinco.diaFinEmisionGiros}" />
+        <beans:entry key="mesInicioPeriodoValidacion"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaCinco.mesInicioEmisionGiros}" />
+        <beans:entry key="mesFinPeriodoValidacion"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaCinco.mesFinEmisionGiros}" />
+        <beans:entry key="diaInicioPeriodoValidacionPrimerGiro"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaCinco.diaInicioEmisionPrimerosGiros}" />
+        <beans:entry key="diaFinPeriodoValidacionPrimerGiro"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaCinco.diaFinEmisionPrimerosGiros}" />
+        <beans:entry key="mesInicioPeriodoValidacionPrimerGiro"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaCinco.mesInicioEmisionPrimerosGiros}" />
+        <beans:entry key="mesFinPeriodoValidacionPrimerGiro"
+          value="${bne.jobs.procesarCertificacionesJob.procesoDiaCinco.mesFinEmisionPrimerosGiros}" />
+        <beans:entry key="smtpHost" value="${bne.mail.smtp.host}" />
+        <beans:entry key="smtpPort" value="${bne.mail.smtp.port}" />
+        <beans:entry key="smtpUser" value="${bne.mail.smtp.user}" />
+        <beans:entry key="smtpPassword" value="${bne.mail.smtp.password}" />
+        <beans:entry key="smtpAuthType" value="${bne.mail.smtp.authtype}" />
+        <beans:entry key="smtpNtlmdomain" value="${bne.mail.smtp.ntlmdomain}" />
+        <beans:entry key="mailFrom" value="${bne.jobs.procesarCertificacionesJob.mail_from}" />
+        <beans:entry key="mailTo" value="${bne.jobs.procesarCertificacionesJob.mail_to}" />
+
+      </beans:map>
+    </beans:property>
+  </beans:bean>
+
+
+  <!-- Envío de SMS encolados -->
+  <beans:bean id="enviaSmsEncoladosJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.EnviaSmsEncoladosJob" />
+  </beans:bean>
+
+  <!-- Envío de WhatsApp encolados -->
+  <beans:bean id="enviaWhatsAppEncoladosJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.EnviaWhatsAppEncoladosJob" />
+  </beans:bean>
+
+  <!-- Encolado de SMS de notificación por pago desde AFC -->
+  <beans:bean id="encolaNotificacionAfcPagosSmsJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.EncolaNotificacionAfcPagosSmsJob" />
+  </beans:bean>
+
+  <!-- Importación de ofertas del Servicio Civil -->
+  <beans:bean id="importacionOfertasScJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ImportacionOfertasSCJob" />
+  </beans:bean>
+
+  <!-- Job Mathing -->
+  <beans:bean id="jobMatchingJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.JobMatchingJob" />
+  </beans:bean>
+
+  <!-- Job Notificacion acuerdos programados -->
+  <beans:bean id="notificacionAcuerdosProgramadosJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.NotificacionAcuerdosProgramadosJob" />
+  </beans:bean>
+
+  <!-- Job Actulizar Tabla HOY -->
+  <beans:bean id="actualizaTablaHoyFechaActualBusqOferJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ActualizaTablaHoyFechaActualBusqOferJob" />
+  </beans:bean>
+
+  <!-- Job Carga ficheros AFC -->
+  <beans:bean id="jobCargaFicherosAFC" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.CargaFicherosAFCJob" />
+  </beans:bean>
+
+  <beans:bean id="actualizarEstadoEntrevistasJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ActualizarEstadoEntrevistasJob" />
+  </beans:bean>
+
+  <!-- Job actualizar estado talleres -->
+  <beans:bean id="jobCargaPerfilesChileValora" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.CargaPerfilesChileValoraJob" />
+  </beans:bean>
+
+  <!-- Job actualizar estado talleres -->
+  <beans:bean id="actualizarEstadoTalleresAprestosLaboralesJob"
+    class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ActualizarEstadoTalleresAprestosLaboralesJob" />
+  </beans:bean>
+
+  <!-- Job Reporte tamaño tablas -->
+  <beans:bean id="lecturaTamanoTablasJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.LecturaTamanoTablasJob" />
+  </beans:bean>
+
+  <!-- Job Reporte Otras Ocupaciones -->
+  <beans:bean id="jobOtrasOcupaciones" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.OtrasOcupacionesTitulacionesJob" />
+  </beans:bean>
+
+  <!-- Job Reporte Gestion Invitaciones CCHC -->
+  <beans:bean id="jobGestionInvitaciones" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.GestionInvitacionesCCHCJob" />
+  </beans:bean>
+
+  <!-- Job Reporte CCHC -->
+  <beans:bean id="jobCchcDescargaCv" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.cchc.CchcDescargaCvJob" />
+  </beans:bean>
+
+  <!-- Job Añadir Personas a Cajas y a Bne (en caso de no existir) -->
+  <beans:bean id="jobAnadirPersonasPerfilSalidaCajas" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.cajas.AnadirPersonasPerfilSalidaCajasJob" />
+  </beans:bean>
+
+  <beans:bean id="jobCajasProcesosOutplacement" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.cajas.CajasProcesosOutplacementJob" />
+  </beans:bean>
+
+  <!-- Job Consulta Masiva Registro Civil -->
+  <beans:bean id="jobConsultaRegistroCivil" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ConsultaMasivaRegistroCivilJob" />
+  </beans:bean>
+
+  <!-- Job Consulta de Per_personas a Registro Civil -->
+  <beans:bean id="jobConsultaPerPersonasRegistroCivil" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ConsultaAFCPerPersonasRegistroCivilJob" />
+  </beans:bean>
+
+  <!-- Job informe anual Ofertas Empresas Ley21015 -->
+  <beans:bean id="jobCertificadoAnual21015" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.GenerarCertificados21015AnualJob" />
+  </beans:bean>
+
+  <!-- Job actualizar informacion registro civil -->
+  <beans:bean id="actualizarInfoRegCivilJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ActualizarInfoRegCivilJob" />
+  </beans:bean>
+
+  <!-- Job informe semanal ofertas PTP -->
+  <beans:bean id="ptpInformeSemanalJob" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.ptp.PtpInformeSemanalJob" />
+  </beans:bean>
+
+  <!-- Job llamadas URL -->
+  <beans:bean id="jobLlamadaURL" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.LlamadaURLJob" />
+  </beans:bean>
+
+  <!-- Job informe semanal ofertas LOD -->
+  <beans:bean id="jobInformeSemanalLod" class="org.springframework.scheduling.quartz.JobDetailFactoryBean">
+    <beans:property name="jobClass" value="es.altia.bne.cron.jobs.InformeSemanalLodJob" />
+  </beans:bean>
+
+  <util:list id="quartzTriggers">
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="envioInformacionAccionesSenceJob" />
+      <beans:property name="cronExpression" value="${bne.cron.envioInformacionAccionesSenceJob.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="actualizaEstadoSmsJob" />
+      <beans:property name="cronExpression" value="${bne.cron.actualizaEstadoSmsJob.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="reseteaSecuenciaTransaccionRegistroCivilJob" />
+      <beans:property name="cronExpression" value="${bne.cron.reseteaSecuenciaTransaccionRegistroCivilJob.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="reseteaSecuenciaOfertasJob" />
+      <beans:property name="cronExpression" value="${bne.cron.reseteaSecuenciaOfertasJob.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="testJob" />
+      <beans:property name="cronExpression" value="${bne.cron.testJob.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="enviaSmsEncoladosJob" />
+      <beans:property name="cronExpression" value="${bne.cron.enviaSmsEncoladosJob.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="enviaWhatsAppEncoladosJob" />
+      <beans:property name="cronExpression" value="${bne.cron.enviaWhatsAppEncoladosJob.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="procesarCertificacionesJob" />
+      <beans:property name="cronExpression" value="${bne.cron.procesarCertificacionesJob.procesoDiaVeintidos.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="procesarCertificacionesDiaCincoJob" />
+      <beans:property name="cronExpression" value="${bne.cron.procesarCertificacionesJob.procesoDiaCinco.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="importacionOfertasScJob" />
+      <beans:property name="cronExpression" value="${bne.cron.importacionOfertasScJob.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobMatchingJob" />
+      <beans:property name="cronExpression" value="${bne.cron.jobJobMatching.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="notificacionAcuerdosProgramadosJob" />
+      <beans:property name="cronExpression" value="${bne.cron.notificacionAcuerdosProgramadosJob.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="actualizaTablaHoyFechaActualBusqOferJob" />
+      <beans:property name="cronExpression" value="${bne.cron.actualizaTablaHoyFechaActualBusqOferJob.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobCargaFicherosAFC" />
+      <beans:property name="cronExpression" value="${bne.cron.jobCargaFicherosAFC.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="encolaNotificacionAfcPagosSmsJob" />
+      <beans:property name="cronExpression" value="${bne.cron.jobEncolaNotificacionAfcPagosSms.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="actualizarEstadoEntrevistasJob" />
+      <beans:property name="cronExpression" value="${bne.cron.actualizarEstadoEntrevistasJob.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="actualizarEstadoTalleresAprestosLaboralesJob" />
+      <beans:property name="cronExpression" value="${bne.cron.actualizarEstadoTalleresAprestosLaboralesJob.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobCargaPerfilesChileValora" />
+      <beans:property name="cronExpression" value="${bne.cron.jobCargaPerfilesChileValora.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="lecturaTamanoTablasJob" />
+      <beans:property name="cronExpression" value="${bne.cron.jobLecturaTamanoTablas.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="actualizarInfoRegCivilJob" />
+      <beans:property name="cronExpression" value="${bne.cron.jobActualizarInfoRegCivil.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="ptpInformeSemanalJob" />
+      <beans:property name="cronExpression" value="${bne.cron.jobPtpInformeSemanal.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobOtrasOcupaciones" />
+      <beans:property name="cronExpression" value="${bne.cron.jobOtrasOcupaciones.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobGestionInvitaciones" />
+      <beans:property name="cronExpression" value="${bne.cron.jobGestionInvitaciones.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobCchcDescargaCv" />
+      <beans:property name="cronExpression" value="${bne.cron.jobDescargaCv.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobAnadirPersonasPerfilSalidaCajas" />
+      <beans:property name="cronExpression" value="${bne.cron.jobAnadirPersonasPerfilSalidaCajas.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobCajasProcesosOutplacement" />
+      <beans:property name="cronExpression" value="${bne.cron.jobCajasProcesosOutplacement.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobConsultaRegistroCivil" />
+      <beans:property name="cronExpression" value="${bne.cron.jobConsultaRegistroCivil.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobConsultaPerPersonasRegistroCivil" />
+      <beans:property name="cronExpression" value="${bne.cron.jobConsultaPerPersonasRegistroCivil.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobCertificadoAnual21015" />
+      <beans:property name="cronExpression" value="${bne.cron.jobCertificadoAnual21015.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobLlamadaURL" />
+      <beans:property name="cronExpression" value="${bne.cron.jobLlamadaURL.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+
+    <beans:bean class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+      <beans:property name="jobDetail" ref="jobInformeSemanalLod" />
+      <beans:property name="cronExpression" value="${bne.cron.jobInformeSemanalLod.cronExpression}" />
+      <beans:property name="misfireInstruction" value="#{T(org.quartz.CronTrigger).MISFIRE_INSTRUCTION_DO_NOTHING}" />
+    </beans:bean>
+  </util:list>
+
+  <beans:bean id="quartzJobFactory" class="es.altia.bne.cron.commons.AutowiringSpringBeanJobFactory">
+    <beans:property name="ignoredUnknownProperties" value="applicationContext" />
+  </beans:bean>
+
+  <beans:bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+    <beans:property name="configLocation" value="classpath:es/altia/bne/cron/config/quartz.properties" />
+    <beans:property name="dataSource" ref="dataSourceBneQuartz" />
+    <beans:property name="transactionManager" ref="transactionManagerBneQuartz" />
+    <beans:property name="jobFactory" ref="quartzJobFactory" />
+    <beans:property name="overwriteExistingJobs" value="${scheduler.quartz.db.override-on-startup}" />
+    <beans:property name="autoStartup" value="true" />
+    <beans:property name="schedulerName" value="quartzScheduler" />
+    <beans:property name="applicationContextSchedulerContextKey" value="applicationContext" />
+    <beans:property name="waitForJobsToCompleteOnShutdown" value="${scheduler.shutdown.wait-for-jobs-completion}" />
+    <beans:property name="quartzProperties">
+      <beans:props>
+        <beans:prop key="org.quartz.jobStore.misfireThreshold">
+          ${scheduler.quartz.prop.jobStore.misfireThreshold}
+        </beans:prop>
+        <beans:prop key="org.quartz.threadPool.threadCount">
+          ${scheduler.quartz.prop.threadPool.threadCount}
+        </beans:prop>
+      </beans:props>
+    </beans:property>
+    <beans:property name="triggers" ref="quartzTriggers" />
+    <beans:property name="globalJobListeners" ref="quartzJobListener" />
+  </beans:bean>
+
+</beans:beans>

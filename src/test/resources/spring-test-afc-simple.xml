@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Configuración completa para test del AFC Job -->
+<beans:beans
+    xmlns:beans="http://www.springframework.org/schema/beans" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans 
+    http://www.springframework.org/schema/beans/spring-beans-4.0.xsd    
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-4.0.xsd"    
+    default-lazy-init="true">
+    
+    <!-- Cargar propiedades -->
+    <context:property-placeholder location="classpath:es/altia/bne/cron/config/jobs.properties"/>   
+    
+    <!-- Datasource principal -->
+    <beans:bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <beans:property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+        <beans:property name="url" value="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne;" />
+        <beans:property name="username" value="bne" />
+        <beans:property name="password" value="bne" />
+    </beans:bean>
+    
+    <!-- Datasource de solo lectura -->
+    <beans:bean id="readOnlyDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <beans:property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+        <beans:property name="url" value="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne;" />
+        <beans:property name="username" value="bne" />
+        <beans:property name="password" value="bne" />
+    </beans:bean>
+    
+    <!-- Datasource de documentos -->
+    <beans:bean id="documentosDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <beans:property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+        <beans:property name="url" value="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne;" />
+        <beans:property name="username" value="bne" />
+        <beans:property name="password" value="bne" />
+    </beans:bean>
+    
+    <!-- Bean BCryptPasswordEncoder que faltaba -->
+    <beans:bean name="bcryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder">
+        <beans:constructor-arg value="12" />
+    </beans:bean>
+    
+    <!-- Importar configuraciones necesarias -->
+    <beans:import resource="classpath:es/altia/bne/config/hibernate/HibernateSessionFactory.xml"/>  
+    <beans:import resource="classpath:es/altia/bne/config/dozer/spring-dozer.xml"/>
+    <beans:import resource="classpath:es/altia/bne/config/dozer/spring-dozer-service.xml"/>    
+
+    <context:annotation-config />
+    
+    <!-- Escanear TODOS los paquetes de servicios necesarios -->
+    <context:component-scan base-package="es.altia.bne.model"/>
+    <context:component-scan base-package="es.altia.bne.service"/>   
+    <context:component-scan base-package="es.altia.bne.cron"/>
+    <context:component-scan base-package="es.altia.bne.comun"/>
+    <context:component-scan base-package="es.altia.bne.helper"/>
+    
+</beans:beans>

@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Implementation-Title: Servicios web expuestos por BNE
+Implementation-Version: 3.86.07
+Built-By: AGENTE PRG 01
+Implementation-Build: 
+Implementation-Vendor-Id: es.altia.bolsaempleo
+Build-Profile: 
+Build-Jdk: 1.8.0_371
+Created-By: Maven Integration for Eclipse
+Implementation-Vendor: ALTIA
+

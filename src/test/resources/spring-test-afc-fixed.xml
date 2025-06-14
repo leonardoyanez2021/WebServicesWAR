@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security" xmlns:beans="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+  xmlns:context="http://www.springframework.org/schema/context" xmlns:mvc="http://www.springframework.org/schema/mvc"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+    http://www.springframework.org/schema/security
+    http://www.springframework.org/schema/security/spring-security-5.4.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-4.0.xsd
+    http://www.springframework.org/schema/mvc
+    http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd
+    http://www.springframework.org/schema/util 
+    http://www.springframework.org/schema/util/spring-util-4.0.xsd"
+    default-lazy-init="true">
+
+  <!-- Cargar propiedades (igual que spring-common.xml) -->
+  <context:property-placeholder location="classpath:overriding-application.properties"
+    ignore-resource-not-found="true" ignore-unresolvable="true" order="1" />
+
+  <context:property-placeholder
+    location="classpath:application.properties,
+                  classpath:es/altia/bne/cron/config/jobs.properties"
+    ignore-resource-not-found="true" order="2" />
+
+  <!-- Datasources directos (sin JNDI) -->
+  <beans:bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+    <beans:property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+    <beans:property name="url" value="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne;" />
+    <beans:property name="username" value="bne" />
+    <beans:property name="password" value="bne" />
+  </beans:bean>
+
+  <beans:bean id="readOnlyDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+    <beans:property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+    <beans:property name="url" value="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne;" />
+    <beans:property name="username" value="bne" />
+    <beans:property name="password" value="bne" />
+  </beans:bean>
+
+  <beans:bean id="documentosDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+    <beans:property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+    <beans:property name="url" value="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne;" />
+    <beans:property name="username" value="bne" />
+    <beans:property name="password" value="bne" />
+  </beans:bean>
+
+  <!-- Importar configuraciones (igual que spring-common.xml) -->
+  <beans:import resource="classpath:es/altia/bne/config/hibernate/HibernateSessionFactory.xml" />
+  <beans:import resource="classpath:es/altia/bne/config/dozer/spring-dozer.xml" />
+  <beans:import resource="classpath:es/altia/bne/config/dozer/spring-dozer-service.xml" />
+
+  <context:annotation-config />
+
+  <!-- Component scan (igual que spring-common.xml) -->
+  <context:component-scan base-package="es.altia.bne.model" />
+  <context:component-scan base-package="es.altia.bne.service" />
+  <context:component-scan base-package="es.altia.bne.service.afcgiros" />
+  <context:component-scan base-package="es.altia.bne.comun" />
+  <context:component-scan base-package="es.altia.bne.helper" />
+  <context:component-scan base-package="es.altia.bne.cron" />
+
+  <!-- BCrypt encoder (igual que spring-common.xml) -->
+  <beans:bean name="bcryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder">
+    <beans:constructor-arg value="12" />
+  </beans:bean>
+
+  <!-- Object mapper (igual que spring-common.xml) -->
+  <beans:bean name="objectMapper" class="com.fasterxml.jackson.databind.ObjectMapper" />
+
+</beans:beans>

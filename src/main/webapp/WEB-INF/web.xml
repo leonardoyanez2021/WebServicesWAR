@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://xmlns.jcp.org/xml/ns/javaee" 
+    xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd" 
+    version="3.1">
+
+	<display-name>Servicios no atendidos BNE</display-name>
+
+    <!-- Nombre de la aplicación para el logback -->
+	<env-entry>
+		<env-entry-name>applicationName</env-entry-name>
+		<env-entry-type>java.lang.String</env-entry-type>
+		<env-entry-value>batch</env-entry-value>
+	</env-entry>
+
+
+	<!-- PARAMETROS INICIALES -->
+	<!-- Ficheros de configuracion del contexto principal de spring -->
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>
+			/WEB-INF/config/spring-common.xml
+		</param-value>
+	</context-param>
+    
+     <!-- Nombre del datasource a usar por el paquete DAO -->
+    <env-entry>
+        <env-entry-name>datasourceJNDIName</env-entry-name>
+        <env-entry-type>java.lang.String</env-entry-type>
+        <env-entry-value>java:comp/env/jdbc/bneDS</env-entry-value>
+    </env-entry>
+    
+     <!-- Nombre del datasource a usar por el paquete DAO -->
+    <env-entry>
+        <env-entry-name>documentosDatasourceJNDIName</env-entry-name>
+        <env-entry-type>java.lang.String</env-entry-type>
+        <env-entry-value>java:comp/env/jdbc/webservicesDocumentosDS</env-entry-value>
+    </env-entry>
+    
+	<!-- FIN PARAMETROS INICIALES -->
+
+    <!-- Listener inicial que comprueba la conexión a BBDD -->
+    <listener>
+        <!-- OJO: este listener debe ser siempre EL PRIMERO en cargarse    -->
+        <!-- Si no se carga el primero es posible una condición de carrera entre Quartz y este listener, -->
+        <!-- es decir, que Quartz acabe sin tareas -->
+        <listener-class>es.altia.bne.cron.commons.listener.ApplicationListener</listener-class>
+    </listener>
+
+	<!-- Inicializacion del contexto principal de spring segun los ficheros 
+		que indique el parametro "contextConfigLocation" -->
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+    
+	<!-- FinInicializacion del contexto principal de spring segun los ficheros 
+		que indique el parametro "contextConfigLocation" -->
+
+</web-app>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Context docBase="bnews" path="/bnews" reloadable="true">
+
+
+   <!-- ### 1. LOCAL VITORIA ### -->
+   <Resource name="jdbc/bneDS" auth="Container" 
+              factory="org.apache.naming.factory.BeanFactory"
+              type="com.zaxxer.hikari.HikariDataSource" 
+              username="bne" password="bne"
+              poolName="batchPool"
+              jdbcUrl="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne;"
+              driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+              autoCommit="false"
+              connectionTimeout="10000" idleTimeout="120000" maxLifetime="1800000"
+              validationTimeout="2000"
+              minimumIdle="2" maximumPoolSize="30"
+              connectionInitSql="SELECT * FROM C3P0_TEST_TABLE"
+              transactionIsolation="TRANSACTION_READ_UNCOMMITTED"
+              />
+
+   <Resource name="jdbc/bneQuartzDS" auth="Container" 
+              factory="org.apache.naming.factory.BeanFactory"
+              type="com.zaxxer.hikari.HikariDataSource" 
+              username="bnequartz" password="bnequartz"
+              poolName="batchQuartzPool"
+              jdbcUrl="jdbc:sqlserver://172.22.132.50:1433;databaseName=bnequartz;"
+              driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+              autoCommit="false"
+              connectionTimeout="10000" idleTimeout="120000" maxLifetime="1800000"
+              validationTimeout="2000"
+              minimumIdle="2" maximumPoolSize="10"
+              connectionInitSql="SELECT * FROM C3P0_TEST_TABLE"
+              transactionIsolation="TRANSACTION_READ_UNCOMMITTED"
+              />
+              
+              
+   <Resource name="jdbc/webservicesDSReadOnly" auth="Container" 
+              factory="org.apache.naming.factory.BeanFactory"
+              type="com.zaxxer.hikari.HikariDataSource" 
+              username="bnequartz" password="bnequartz"
+              poolName="webservicesPoolReadOnly"
+              jdbcUrl="jdbc:sqlserver://172.22.132.50:1433;databaseName=bnequartz;"
+              driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+              autoCommit="false"
+              connectionTimeout="10000" idleTimeout="120000" maxLifetime="1800000"
+              validationTimeout="2000"
+              minimumIdle="2" maximumPoolSize="4"
+              connectionInitSql="SELECT * FROM C3P0_TEST_TABLE"
+              transactionIsolation="TRANSACTION_READ_UNCOMMITTED"
+              />
+              
+              <Resource name="jdbc/webservicesDocumentosDS" auth="Container" 
+              factory="org.apache.naming.factory.BeanFactory"
+              type="com.zaxxer.hikari.HikariDataSource" 
+              username="bne" password="bne"
+              poolName="webservicesDocumentosPool"
+              jdbcUrl="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne_doc;"
+              driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+              autoCommit="false"
+              connectionTimeout="10000" idleTimeout="120000" maxLifetime="1800000"
+              validationTimeout="2000"
+              minimumIdle="2" maximumPoolSize="30"
+              connectionInitSql="SELECT * FROM C3P0_TEST_TABLE"
+              transactionIsolation="TRANSACTION_READ_UNCOMMITTED"
+              />
+              
+              <Resource name="jdbc/webservicesDocumentosDS" auth="Container" 
+              factory="org.apache.naming.factory.BeanFactory"
+              type="com.zaxxer.hikari.HikariDataSource" 
+              username="bne" password="bne"
+              poolName="webservicesDocumentosPool"
+              jdbcUrl="jdbc:sqlserver://172.22.132.50:1433;databaseName=bne_doc;"
+              driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+              autoCommit="false"
+              connectionTimeout="10000" idleTimeout="120000" maxLifetime="1800000"
+              validationTimeout="2000"
+              minimumIdle="2" maximumPoolSize="4"
+              connectionInitSql="SELECT * FROM C3P0_TEST_TABLE"
+              transactionIsolation="TRANSACTION_READ_UNCOMMITTED"
+              />
+              
+   <!-- ### 2. DATACENTER ### -->
+   <!--
+   <Resource name="jdbc/bneDS" auth="Container" 
+              factory="org.apache.naming.factory.BeanFactory"
+              type="com.zaxxer.hikari.HikariDataSource" 
+              username="bne" password="AI&amp;Mfx/Sq-\U"
+              poolName="postulantesPool"
+              jdbcUrl="jdbc:sqlserver://176.58.9.97::1433;databaseName=bne;"
+              driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+              autoCommit="false"
+              connectionTimeout="10000" idleTimeout="120000" maxLifetime="1800000"
+              validationTimeout="2000"
+              minimumIdle="2" maximumPoolSize="4"
+              connectionInitSql="SELECT * FROM C3P0_TEST_TABLE"
+              transactionIsolation="TRANSACTION_READ_UNCOMMITTED"
+              />
+
+   <Resource name="jdbc/bneQuartzDS" auth="Container" 
+              factory="org.apache.naming.factory.BeanFactory"
+              type="com.zaxxer.hikari.HikariDataSource" 
+              username="bnequartz" password="*fmx45,Wialc"
+              poolName="postulantesPool"
+              jdbcUrl="jdbc:sqlserver://176.58.9.97:1433;databaseName=bnequartz;"
+              driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver"
+              autoCommit="false"
+              connectionTimeout="10000" idleTimeout="120000" maxLifetime="1800000"
+              validationTimeout="2000"
+              minimumIdle="2" maximumPoolSize="10"
+              connectionInitSql="SELECT * FROM C3P0_TEST_TABLE"
+              transactionIsolation="TRANSACTION_READ_UNCOMMITTED"
+              />
+   -->
+
+</Context>
